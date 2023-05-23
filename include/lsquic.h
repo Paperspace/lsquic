@@ -178,7 +178,7 @@ struct lsquic_stream_if {
      *  After `on_close' is called, the stream is no longer accessible.
      */
     lsquic_stream_ctx_t *
-         (*on_new_stream)(void *stream_if_ctx, lsquic_stream_t *s);
+         (*on_new_stream)(void *stream_if_ctx, lsquic_stream_t *s, int outgoing_stream);
 
     void (*on_read)     (lsquic_stream_t *s, lsquic_stream_ctx_t *h);
     void (*on_write)    (lsquic_stream_t *s, lsquic_stream_ctx_t *h);

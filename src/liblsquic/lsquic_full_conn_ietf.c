@@ -1037,7 +1037,7 @@ create_uni_stream_out (struct ietf_full_conn *conn, int priority,
     stream_id = generate_stream_id(conn, SD_UNI);
     stream = lsquic_stream_new(stream_id, &conn->ifc_pub, stream_if,
                 stream_if_ctx, 0, conn->ifc_max_stream_data_uni,
-                SCF_IETF | (priority < 0 ? SCF_CRITICAL : 0));
+                SCF_IETF | (priority < 0 ? SCF_CRITICAL : 0), 1); // hopefully unused for our purposes, setting to 1 anyway
     if (!stream)
         return -1;
     if (!lsquic_hash_insert(conn->ifc_pub.all_streams, &stream->id,
@@ -1050,7 +1050,7 @@ create_uni_stream_out (struct ietf_full_conn *conn, int priority,
         lsquic_stream_set_priority_internal(stream, priority);
     else
         ++conn->ifc_pub.n_special_streams;
-    lsquic_stream_call_on_new(stream);
+    lsquic_stream_call_on_new(stream, 1);
     return 0;
 }
 
@@ -1103,7 +1103,7 @@ create_bidi_stream_out (struct ietf_full_conn *conn)
                 conn->ifc_enpub->enp_stream_if,
                 conn->ifc_enpub->enp_stream_if_ctx,
                 conn->ifc_settings->es_init_max_stream_data_bidi_local,
-                conn->ifc_cfg.max_stream_send, flags);
+                conn->ifc_cfg.max_stream_send, flags, 1);
     if (!stream)
         return -1;
     if (!lsquic_hash_insert(conn->ifc_pub.all_streams, &stream->id,
@@ -1112,7 +1112,7 @@ create_bidi_stream_out (struct ietf_full_conn *conn)
         lsquic_stream_destroy(stream);
         return -1;
     }
-    lsquic_stream_call_on_new(stream);
+    lsquic_stream_call_on_new(stream, 1);
     return 0;
 }
 
@@ -1137,7 +1137,7 @@ create_push_stream (struct ietf_full_conn *conn)
                 conn->ifc_enpub->enp_stream_if,
                 conn->ifc_enpub->enp_stream_if_ctx,
                 conn->ifc_settings->es_init_max_stream_data_bidi_local,
-                conn->ifc_cfg.max_stream_send, flags);
+                conn->ifc_cfg.max_stream_send, flags, 1);
     if (!stream)
         return NULL;
     if (!lsquic_hash_insert(conn->ifc_pub.all_streams, &stream->id,
@@ -2905,7 +2905,7 @@ service_streams (struct ietf_full_conn *conn)
             --conn->ifc_n_delayed_streams;
             LSQ_DEBUG("goaway mode: delayed stream results in null ctor");
             (void) conn->ifc_enpub->enp_stream_if->on_new_stream(
-                                    conn->ifc_enpub->enp_stream_if_ctx, NULL);
+                                    conn->ifc_enpub->enp_stream_if_ctx, NULL, 0); //no idea
         }
         maybe_close_conn(conn);
     }
@@ -4167,7 +4167,7 @@ ietf_full_conn_ci_push_stream (struct lsquic_conn *lconn, void *hset,
     promise->pp_pushed_stream = pushed_stream;
     pushed_stream->sm_promise = promise;
 
-    lsquic_stream_call_on_new(pushed_stream);
+    lsquic_stream_call_on_new(pushed_stream, 0);
 
     lsquic_pp_put(promise, conn->ifc_pub.u.ietf.promises);
     return 0;
@@ -5457,7 +5457,7 @@ new_stream (struct ietf_full_conn *conn, lsquic_stream_id_t stream_id,
 
     stream = lsquic_stream_new(stream_id, &conn->ifc_pub,
                                iface, stream_ctx, initial_window,
-                               conn->ifc_cfg.max_stream_send, flags);
+                               conn->ifc_cfg.max_stream_send, flags, 0);
     if (stream)
     {
         if (conn->ifc_bpus)
@@ -5478,7 +5478,7 @@ new_stream (struct ietf_full_conn *conn, lsquic_stream_id_t stream_id,
                             sizeof(stream->id), stream, &stream->sm_hash_el))
         {
             if (call_on_new)
-                lsquic_stream_call_on_new(stream);
+                lsquic_stream_call_on_new(stream, 0);
         }
         else
         {
@@ -5574,7 +5574,7 @@ process_rst_stream_frame (struct ietf_full_conn *conn,
         return 0;
     }
     if (call_on_new)
-        lsquic_stream_call_on_new(stream);
+        lsquic_stream_call_on_new(stream, 0);
     return parsed_len;
 }
 
@@ -5653,7 +5653,7 @@ process_stop_sending_frame (struct ietf_full_conn *conn,
         }
         lsquic_stream_stop_sending_in(stream, error_code);
         if (!(conn->ifc_flags & IFC_HTTP))
-            lsquic_stream_call_on_new(stream);
+            lsquic_stream_call_on_new(stream, 0);
     }
 
     return parsed_len;
@@ -8747,7 +8747,7 @@ ietf_full_conn_ci_make_stream (struct lsquic_conn *lconn)
     else if (either_side_going_away(conn))
     {
         (void) conn->ifc_enpub->enp_stream_if->on_new_stream(
-                                    conn->ifc_enpub->enp_stream_if_ctx, NULL);
+                                    conn->ifc_enpub->enp_stream_if_ctx, NULL, 0);
         LSQ_DEBUG("going away: no streams will be initiated");
     }
     else

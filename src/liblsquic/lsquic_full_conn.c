@@ -269,11 +269,11 @@ ack_alarm_expired (enum alarm_id, void *ctx, lsquic_time_t expiry, lsquic_time_t
 
 static lsquic_stream_t *
 new_stream (struct full_conn *conn, lsquic_stream_id_t stream_id,
-            enum stream_ctor_flags);
+            enum stream_ctor_flags, int outgoing_stream);
 
 static struct lsquic_stream *
 new_stream_ext (struct full_conn *, lsquic_stream_id_t, enum stream_if,
-                                                    enum stream_ctor_flags);
+                                                    enum stream_ctor_flags, int outgoing_stream);
 
 static void
 reset_ack_state (struct full_conn *conn);
@@ -687,7 +687,7 @@ new_conn_common (lsquic_cid_t cid, struct lsquic_engine_public *enpub,
         conn->fc_stream_ifs[STREAM_IF_HDR].stream_if_ctx = conn->fc_pub.u.gquic.hs;
         headers_stream = new_stream_ext(conn, headers_stream_id_by_ver(version),
                                 STREAM_IF_HDR,
-                    SCF_CALL_ON_NEW|SCF_DI_AUTOSWITCH|SCF_CRITICAL|SCF_HEADERS);
+                    SCF_CALL_ON_NEW|SCF_DI_AUTOSWITCH|SCF_CRITICAL|SCF_HEADERS, 0);
         if (!headers_stream)
             goto cleanup_on_error;
     }
@@ -791,7 +791,7 @@ lsquic_gquic_full_conn_client_new (struct lsquic_engine_public *enpub,
                     lsquic_time_now() + conn->fc_settings->es_handshake_to);
     if (!new_stream_ext(conn, hsk_stream_id(conn), STREAM_IF_HSK,
             SCF_CALL_ON_NEW|SCF_DI_AUTOSWITCH|SCF_CRITICAL|SCF_CRYPTO
-            |(conn->fc_conn.cn_version >= LSQVER_050 ? SCF_CRYPTO_FRAMES : 0)))
+            |(conn->fc_conn.cn_version >= LSQVER_050 ? SCF_CRYPTO_FRAMES : 0), 0))
     {
         LSQ_WARN("could not create handshake stream: %s", strerror(errno));
         conn->fc_conn.cn_if->ci_destroy(&conn->fc_conn);
@@ -869,7 +869,7 @@ lsquic_gquic_full_conn_server_new (struct lsquic_engine_public *enpub,
     /* Adjust offsets in the HANDSHAKE stream: */
     hsk_stream = new_stream_ext(conn, hsk_stream_id(conn), STREAM_IF_HSK,
             SCF_CALL_ON_NEW|SCF_DI_AUTOSWITCH|SCF_CRITICAL|SCF_CRYPTO
-            |(conn->fc_conn.cn_version >= LSQVER_050 ? SCF_CRYPTO_FRAMES : 0));
+            |(conn->fc_conn.cn_version >= LSQVER_050 ? SCF_CRYPTO_FRAMES : 0), 0);
     if (!hsk_stream)
     {
         LSQ_DEBUG("could not create handshake stream: %s", strerror(errno));
@@ -1313,7 +1313,7 @@ full_conn_ci_write_ack (struct lsquic_conn *lconn,
 
 static lsquic_stream_t *
 new_stream_ext (struct full_conn *conn, lsquic_stream_id_t stream_id,
-                enum stream_if if_idx, enum stream_ctor_flags stream_ctor_flags)
+                enum stream_if if_idx, enum stream_ctor_flags stream_ctor_flags, int outgoing_stream)
 {
     struct lsquic_stream *stream;
 
@@ -1322,7 +1322,7 @@ new_stream_ext (struct full_conn *conn, lsquic_stream_id_t stream_id,
         conn->fc_stream_ifs[if_idx].stream_if_ctx, conn->fc_settings->es_sfcw,
         stream_ctor_flags & SCF_CRYPTO
                                 ? 16 * 1024 : conn->fc_cfg.max_stream_send,
-        stream_ctor_flags);
+        stream_ctor_flags, outgoing_stream);
     if (stream)
         lsquic_hash_insert(conn->fc_pub.all_streams, &stream->id,
                             sizeof(stream->id), stream, &stream->sm_hash_el);
@@ -1332,7 +1332,7 @@ new_stream_ext (struct full_conn *conn, lsquic_stream_id_t stream_id,
 
 static lsquic_stream_t *
 new_stream (struct full_conn *conn, lsquic_stream_id_t stream_id,
-            enum stream_ctor_flags flags)
+            enum stream_ctor_flags flags, int outgoing_stream)
 {
     flags |= SCF_DI_AUTOSWITCH;
     if (conn->fc_pub.u.gquic.hs)
@@ -1342,7 +1342,7 @@ new_stream (struct full_conn *conn, lsquic_stream_id_t stream_id,
     if (conn->fc_enpub->enp_settings.es_delay_onclose)
         flags |= SCF_DELAY_ONCLOSE;
 
-    return new_stream_ext(conn, stream_id, STREAM_IF_STD, flags);
+    return new_stream_ext(conn, stream_id, STREAM_IF_STD, flags, outgoing_stream);
 }
 
 
@@ -1409,12 +1409,12 @@ full_conn_ci_make_stream (struct lsquic_conn *lconn)
     if (handshake_done_or_doing_sess_resume(conn)
                                     && full_conn_ci_n_avail_streams(lconn) > 0)
     {
-        if (!new_stream(conn, generate_stream_id(conn), SCF_CALL_ON_NEW))
+        if (!new_stream(conn, generate_stream_id(conn), SCF_CALL_ON_NEW, 1))
             ABORT_ERROR("could not create new stream: %s", strerror(errno));
     }
     else if (either_side_going_away(conn))
         (void) conn->fc_stream_ifs[STREAM_IF_STD].stream_if->on_new_stream(
-            conn->fc_stream_ifs[STREAM_IF_STD].stream_if_ctx, NULL);
+            conn->fc_stream_ifs[STREAM_IF_STD].stream_if_ctx, NULL, 0);
     else
     {
         ++conn->fc_n_delayed_streams;
@@ -1678,7 +1678,7 @@ process_stream_frame (struct full_conn *conn, lsquic_packet_in_t *packet_in,
             lsquic_malo_put(stream_frame);
             return 0;
         }
-        stream = new_stream(conn, stream_frame->stream_id, SCF_CALL_ON_NEW);
+        stream = new_stream(conn, stream_frame->stream_id, SCF_CALL_ON_NEW, 0);
         if (!stream)
         {
             ABORT_ERROR("cannot create new stream: %s", strerror(errno));
@@ -2155,7 +2155,7 @@ process_rst_stream_frame (struct full_conn *conn, lsquic_packet_in_t *packet_in,
                                                                     stream_id);
             return 0;
         }
-        stream = new_stream(conn, stream_id, SCF_CALL_ON_NEW);
+        stream = new_stream(conn, stream_id, SCF_CALL_ON_NEW, 0); // not sure about RST too much yet
         if (!stream)
         {
             ABORT_ERROR("cannot create new stream: %s", strerror(errno));
@@ -2960,7 +2960,7 @@ create_delayed_streams (struct full_conn *conn)
         /* Delay calling on_new in order not to let the user screw up
          * the counts by making more streams.
          */
-        new_streams[i] = new_stream(conn, generate_stream_id(conn), 0);
+        new_streams[i] = new_stream(conn, generate_stream_id(conn), 0, 0); // i think this would be a 1, setting 0 for now to test
         if (!new_streams[i])
         {
             ABORT_ERROR("%s: cannot create new stream: %s", __func__,
@@ -2974,7 +2974,7 @@ create_delayed_streams (struct full_conn *conn)
     conn->fc_n_delayed_streams -= avail;
 
     for (i = 0; i < avail; ++i)
-        lsquic_stream_call_on_new(new_streams[i]);
+        lsquic_stream_call_on_new(new_streams[i], 0); // probably outgoing (1) but should test first
   cleanup:
     free(new_streams);
 }
@@ -3019,7 +3019,7 @@ service_streams (struct full_conn *conn)
             --conn->fc_n_delayed_streams;
             LSQ_DEBUG("goaway mode: delayed stream results in null ctor");
             (void) conn->fc_stream_ifs[STREAM_IF_STD].stream_if->on_new_stream(
-                conn->fc_stream_ifs[STREAM_IF_STD].stream_if_ctx, NULL);
+                conn->fc_stream_ifs[STREAM_IF_STD].stream_if_ctx, NULL, 0);
         }
         maybe_close_conn(conn);
     }
@@ -3905,7 +3905,7 @@ find_stream_on_non_stream_frame (struct full_conn *conn,
         return NULL;
     }
 
-    stream = new_stream(conn, stream_id, stream_ctor_flags);
+    stream = new_stream(conn, stream_id, stream_ctor_flags, 0);
     if (!stream)
     {
         ABORT_ERROR("cannot create new stream: %s", strerror(errno));
@@ -3993,7 +3993,7 @@ headers_stream_on_incoming_headers (void *ctx, struct uncompressed_headers *uh)
     }
 
     if (!(stream->stream_flags & STREAM_ONNEW_DONE))
-        lsquic_stream_call_on_new(stream);
+        lsquic_stream_call_on_new(stream, 0);
 
     return;
 
@@ -4042,14 +4042,14 @@ headers_stream_on_push_promise (void *ctx, struct uncompressed_headers *uh)
     stream = new_stream_ext(conn, uh->uh_oth_stream_id, STREAM_IF_STD,
                 (conn->fc_enpub->enp_settings.es_delay_onclose?SCF_DELAY_ONCLOSE:0)|
                 SCF_DI_AUTOSWITCH|(conn->fc_enpub->enp_settings.es_rw_once ?
-                                                        SCF_DISP_RW_ONCE : 0));
+                                                        SCF_DISP_RW_ONCE : 0), 0);
     if (!stream)
     {
         ABORT_ERROR("cannot create stream: %s", strerror(errno));
         goto free_uh;
     }
     lsquic_stream_push_req(stream, uh);
-    lsquic_stream_call_on_new(stream);
+    lsquic_stream_call_on_new(stream, 0);
     return;
 
   free_uh:
@@ -4162,7 +4162,7 @@ full_conn_ci_push_stream (struct lsquic_conn *lconn, void *hset,
         return -1;
     }
 
-    pushed_stream = new_stream(conn, stream_id, 0);
+    pushed_stream = new_stream(conn, stream_id, 0, 0);
     if (!pushed_stream)
     {
         LSQ_WARN("cannot create stream: %s", strerror(errno));
@@ -4192,7 +4192,7 @@ full_conn_ci_push_stream (struct lsquic_conn *lconn, void *hset,
         return -1;
     }
 
-    lsquic_stream_call_on_new(pushed_stream);
+    lsquic_stream_call_on_new(pushed_stream, 0);
     return 0;
 }
 

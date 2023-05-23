@@ -438,7 +438,7 @@ lsquic_stream_new (lsquic_stream_id_t id,
         struct lsquic_conn_public *conn_pub,
         const struct lsquic_stream_if *stream_if, void *stream_if_ctx,
         unsigned initial_window, uint64_t initial_send_off,
-        enum stream_ctor_flags ctor_flags)
+        enum stream_ctor_flags ctor_flags, int outgoing_stream)
 {
     lsquic_cfcw_t *cfcw;
     lsquic_stream_t *stream;
@@ -514,7 +514,7 @@ lsquic_stream_new (lsquic_stream_id_t id,
     LSQ_DEBUG("created stream");
     SM_HISTORY_APPEND(stream, SHE_CREATED);
     if (ctor_flags & SCF_CALL_ON_NEW)
-        lsquic_stream_call_on_new(stream);
+        lsquic_stream_call_on_new(stream, outgoing_stream);
     return stream;
 }
 
@@ -556,13 +556,13 @@ lsquic_stream_new_crypto (enum enc_level enc_level,
     stream->sm_write_to_packet = stream_write_to_packet_crypto;
     stream->sm_readable = stream_readable_non_http;
     if (ctor_flags & SCF_CALL_ON_NEW)
-        lsquic_stream_call_on_new(stream);
+        lsquic_stream_call_on_new(stream, 0);
     return stream;
 }
 
 
 void
-lsquic_stream_call_on_new (lsquic_stream_t *stream)
+lsquic_stream_call_on_new (lsquic_stream_t *stream, int outgoing_stream)
 {
     assert(!(stream->stream_flags & STREAM_ONNEW_DONE));
     if (!(stream->stream_flags & STREAM_ONNEW_DONE))
@@ -571,7 +571,7 @@ lsquic_stream_call_on_new (lsquic_stream_t *stream)
         SM_HISTORY_APPEND(stream, SHE_ONNEW);
         stream->stream_flags |= STREAM_ONNEW_DONE;
         stream->st_ctx = stream->stream_if->on_new_stream(stream->sm_onnew_arg,
-                                                          stream);
+                                                          stream, outgoing_stream);
     }
 }
 
@@ -4749,7 +4749,7 @@ lsquic_stream_set_stream_if (struct lsquic_stream *stream,
     LSQ_DEBUG("switched interface");
     assert(stream->stream_flags & STREAM_ONNEW_DONE);
     stream->st_ctx = stream->stream_if->on_new_stream(stream->sm_onnew_arg,
-                                                      stream);
+                                                      stream, 0);
 }
 
 

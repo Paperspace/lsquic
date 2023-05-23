@@ -415,7 +415,7 @@ lsquic_stream_t *
 lsquic_stream_new (lsquic_stream_id_t id, struct lsquic_conn_public *,
                    const struct lsquic_stream_if *, void *stream_if_ctx,
                    unsigned initial_sfrw, uint64_t initial_send_off,
-                   enum stream_ctor_flags);
+                   enum stream_ctor_flags, int outgoing_stream);
 
 struct lsquic_stream *
 lsquic_stream_new_crypto (enum enc_level,
@@ -424,7 +424,7 @@ lsquic_stream_new_crypto (enum enc_level,
         enum stream_ctor_flags ctor_flags);
 
 void
-lsquic_stream_call_on_new (lsquic_stream_t *);
+lsquic_stream_call_on_new (lsquic_stream_t *, int outgoing_stream);
 
 void
 lsquic_stream_destroy (lsquic_stream_t *);

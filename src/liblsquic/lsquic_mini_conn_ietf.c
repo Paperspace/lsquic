@@ -1140,7 +1140,7 @@ imico_process_crypto_frame (IMICO_PROC_FRAME_ARGS)
         LSQ_DEBUG("creating stream on level #%u", enc_level);
         conn->imc_streams[enc_level].mcs_flags |= MCS_CREATED;
         lsquic_mini_cry_sm_if.on_new_stream(conn->imc_conn.cn_enc_session,
-                                    (void *) &conn->imc_streams[enc_level]);
+                                    (void *) &conn->imc_streams[enc_level], 1);
     }
 
     /* Assume that receiving a CRYPTO frame at a higher level means that we
