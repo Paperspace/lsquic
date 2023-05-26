@@ -3234,7 +3234,7 @@ static const SSL_QUIC_METHOD cry_quic_method =
 
 
 static lsquic_stream_ctx_t *
-chsk_ietf_on_new_stream (void *stream_if_ctx, struct lsquic_stream *stream)
+chsk_ietf_on_new_stream (void *stream_if_ctx, struct lsquic_stream *stream, int outgoing_stream)
 {
     struct enc_sess_iquic *const enc_sess = stream_if_ctx;
     enum enc_level enc_level;
@@ -3250,7 +3250,7 @@ chsk_ietf_on_new_stream (void *stream_if_ctx, struct lsquic_stream *stream)
 
 
 static lsquic_stream_ctx_t *
-shsk_ietf_on_new_stream (void *stream_if_ctx, struct lsquic_stream *stream)
+shsk_ietf_on_new_stream (void *stream_if_ctx, struct lsquic_stream *stream, int outgoing_stream)
 {
     struct enc_sess_iquic *const enc_sess = stream_if_ctx;
     enum enc_level enc_level;

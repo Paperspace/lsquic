@@ -75,7 +75,7 @@ lsquic_headers_stream_send_settings (struct headers_stream *hs,
 
 
 static lsquic_stream_ctx_t *
-headers_on_new_stream (void *stream_if_ctx, lsquic_stream_t *stream)
+headers_on_new_stream (void *stream_if_ctx, lsquic_stream_t *stream, int outgoing_stream)
 {
     struct headers_stream *hs = stream_if_ctx;
 

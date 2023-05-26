@@ -32,7 +32,7 @@
 
 
 static lsquic_stream_ctx_t *
-hsk_client_on_new_stream (void *stream_if_ctx, lsquic_stream_t *stream)
+hsk_client_on_new_stream (void *stream_if_ctx, lsquic_stream_t *stream, int outgoing_stream)
 {
     struct client_hsk_ctx *const c_hsk = stream_if_ctx;
 

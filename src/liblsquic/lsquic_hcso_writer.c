@@ -64,7 +64,7 @@ hcso_write_type (struct hcso_writer *writer)
 
 
 static lsquic_stream_ctx_t *
-hcso_on_new (void *stream_if_ctx, struct lsquic_stream *stream)
+hcso_on_new (void *stream_if_ctx, struct lsquic_stream *stream, int outgoing_stream)
 {
     struct hcso_writer *writer = stream_if_ctx;
     struct lsquic_conn *lconn;

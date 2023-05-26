@@ -36,7 +36,7 @@
 
 
 static lsquic_stream_ctx_t *
-hsk_server_on_new_stream (void *stream_if_ctx, lsquic_stream_t *stream)
+hsk_server_on_new_stream (void *stream_if_ctx, lsquic_stream_t *stream, int outgoing_stream)
 {
     struct server_hsk_ctx *const s_hsk = stream_if_ctx;
     LSQ_DEBUG("stream created");

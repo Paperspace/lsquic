@@ -9619,7 +9619,7 @@ static const struct hcsi_callbacks hcsi_callbacks_client_29 =
 
 
 static lsquic_stream_ctx_t *
-hcsi_on_new (void *stream_if_ctx, struct lsquic_stream *stream)
+hcsi_on_new (void *stream_if_ctx, struct lsquic_stream *stream, int outgoing_stream)
 {
     struct ietf_full_conn *const conn = (void *) stream_if_ctx;
     const struct hcsi_callbacks *callbacks;
@@ -9812,7 +9812,7 @@ apply_uni_stream_class (struct ietf_full_conn *conn,
 
 
 static lsquic_stream_ctx_t *
-unicla_on_new (void *stream_if_ctx, struct lsquic_stream *stream)
+unicla_on_new (void *stream_if_ctx, struct lsquic_stream *stream, int outgoing_stream)
 {
     lsquic_stream_wantread(stream, 1);
     stream->sm_uni_type_state.pos = 0;

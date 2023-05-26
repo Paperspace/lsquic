@@ -242,7 +242,7 @@ lsquic_qdh_cleanup (struct qpack_dec_hdl *qdh)
 }
 
 static lsquic_stream_ctx_t *
-qdh_out_on_new (void *stream_if_ctx, struct lsquic_stream *stream)
+qdh_out_on_new (void *stream_if_ctx, struct lsquic_stream *stream, int outgoing_stream)
 {
     struct qpack_dec_hdl *const qdh = stream_if_ctx;
     qdh->qdh_dec_sm_out = stream;
@@ -347,7 +347,7 @@ const struct lsquic_stream_if *const lsquic_qdh_dec_sm_out_if =
 
 
 static lsquic_stream_ctx_t *
-qdh_in_on_new (void *stream_if_ctx, struct lsquic_stream *stream)
+qdh_in_on_new (void *stream_if_ctx, struct lsquic_stream *stream, int outgoing_stream)
 {
     struct qpack_dec_hdl *const qdh = stream_if_ctx;
     qdh->qdh_enc_sm_in = stream;
