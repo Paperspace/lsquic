@@ -2974,7 +2974,7 @@ create_delayed_streams (struct full_conn *conn)
     conn->fc_n_delayed_streams -= avail;
 
     for (i = 0; i < avail; ++i)
-        lsquic_stream_call_on_new(new_streams[i], 0); // probably outgoing (1) but should test first
+        lsquic_stream_call_on_new(new_streams[i], 1); 
   cleanup:
     free(new_streams);
 }
