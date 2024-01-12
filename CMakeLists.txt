@@ -13,6 +13,7 @@ OPTION(LSQUIC_DEVEL "Compile in development mode" OFF)
 
 INCLUDE(GNUInstallDirs)
 
+MESSAGE("LSQUIC Build")
 MESSAGE(STATUS "CMake v${CMAKE_VERSION}")
 
 IF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -173,13 +174,13 @@ IF (NOT DEFINED BORINGSSL_LIB AND DEFINED BORINGSSL_DIR)
         IF (CMAKE_SYSTEM_NAME STREQUAL Windows)
             FIND_LIBRARY(BORINGSSL_LIB_${LIB_NAME}
                 NAMES ${LIB_NAME}
-                PATHS ${BORINGSSL_DIR}/${LIB_NAME}
+                PATHS ${BORINGSSL_DIR}
 		PATH_SUFFIXES Debug Release MinSizeRel RelWithDebInfo
                 NO_DEFAULT_PATH)
         ELSE()
             FIND_LIBRARY(BORINGSSL_LIB_${LIB_NAME}
                 NAMES lib${LIB_NAME}${LIB_SUFFIX}
-                PATHS ${BORINGSSL_DIR}/${LIB_NAME}
+                PATHS ${BORINGSSL_DIR}
                 NO_DEFAULT_PATH)
         ENDIF()
         IF(BORINGSSL_LIB_${LIB_NAME})
