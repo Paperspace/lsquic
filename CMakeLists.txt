@@ -250,14 +250,23 @@ ENDIF()
 
 # Find zlib and libevent header files and library files
 # TODO: libevent is not strictly necessary to build the library.
-FIND_PATH(ZLIB_INCLUDE_DIR NAMES zlib.h)
-IF (ZLIB_INCLUDE_DIR)
-    INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
+# zlib include dirs handled by ps_qtnativeapp
+#FIND_PATH(ZLIB_INCLUDE_DIRS NAMES zlib.h)
+IF (ZLIB_INCLUDE_DIRS)
+    INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIRS})
 ELSE()
     MESSAGE(FATAL_ERROR "zlib.h was not found")
 ENDIF()
 IF (CMAKE_SYSTEM_NAME STREQUAL Windows)
-    FIND_LIBRARY(ZLIB_LIB zlib)
+    # IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #     FIND_LIBRARY(ZLIB_LIB zlib
+    #         PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../install/windows/debug
+    #     )
+    # ELSE()
+    #     FIND_LIBRARY(ZLIB_LIB zlib
+    #         PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../install/windows/release
+    #     )
+    # ENDIF()
 ELSEIF(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     # XXX somehow FIND_LIBRARY() does not find zlib on Travis?
     SET(ZLIB_LIB z)
