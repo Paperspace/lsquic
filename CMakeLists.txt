@@ -134,10 +134,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${MY_CMAKE_FLAGS} $ENV{EXTRA_CFLAGS}")
 
 MESSAGE(STATUS "Compiler flags: ${CMAKE_C_FLAGS}")
 
-find_package(Perl)
-IF(NOT PERL_FOUND)
-    MESSAGE(FATAL_ERROR "Perl not found -- need it to generate source code")
-ENDIF()
+#find_package(Perl)
+#IF(NOT PERL_FOUND)
+#    MESSAGE(FATAL_ERROR "Perl not found -- need it to generate source code")
+#ENDIF()
 
 IF (MSVC)
     IF(LSQUIC_SHARED_LIB)
