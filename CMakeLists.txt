@@ -250,8 +250,10 @@ ENDIF()
 
 # Find zlib and libevent header files and library files
 # TODO: libevent is not strictly necessary to build the library.
-# zlib include dirs handled by ps_qtnativeapp
-#FIND_PATH(ZLIB_INCLUDE_DIRS NAMES zlib.h)
+# zlib include dirs on windows handled by ps_qtnativeapp
+if (NOT WIN32)
+    FIND_PATH(ZLIB_INCLUDE_DIRS NAMES zlib.h)
+endif()
 IF (ZLIB_INCLUDE_DIRS)
     INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIRS})
 ELSE()
