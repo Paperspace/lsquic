@@ -170,17 +170,22 @@ ELSE()
 ENDIF()
 
 IF (NOT DEFINED BORINGSSL_LIB AND DEFINED BORINGSSL_DIR)
+
+    IF (NOT DEFINED BORINGSSL_INSTALL_DIR)
+        SET(BORINGSSL_INSTALL_DIR ${BORINGSSL_DIR})
+    ENDIF()
+
     FOREACH(LIB_NAME ssl crypto)
         IF (CMAKE_SYSTEM_NAME STREQUAL Windows)
             FIND_LIBRARY(BORINGSSL_LIB_${LIB_NAME}
                 NAMES ${LIB_NAME}
-                PATHS ${BORINGSSL_DIR}
+                PATHS ${BORINGSSL_INSTALL_DIR}
 		PATH_SUFFIXES Debug Release MinSizeRel RelWithDebInfo
                 NO_DEFAULT_PATH)
         ELSE()
             FIND_LIBRARY(BORINGSSL_LIB_${LIB_NAME}
                 NAMES lib${LIB_NAME}${LIB_SUFFIX}
-                PATHS ${BORINGSSL_DIR}
+                PATHS ${BORINGSSL_INSTALL_DIR}
                 NO_DEFAULT_PATH)
         ENDIF()
         IF(BORINGSSL_LIB_${LIB_NAME})
